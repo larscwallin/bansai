@@ -1,5 +1,6 @@
 Update 20121221 17:30
 
+
 Removed the "feature" that made toggeling of layer visibility neccesary. This however will
 make all elements, also on hidden layers, present in the exported json.
 
