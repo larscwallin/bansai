@@ -1,0 +1,20 @@
+<inkscape-extension>
+  <_name>Bansai!</_name>
+  <id>com.larscwallin.bansai</id>
+  <dependency type="executable" location="extensions">larscwallin.inx.bansai.py</dependency>
+  <dependency type="executable" location="extensions">inkex.py</dependency>
+
+  <param name="where" type="string" _gui-text="Where to save the resulting JS file?"></param>
+  <param name="reposition" type="boolean" _gui-text="Reposition each selected element to 0,0?">false</param>
+  <param name="viewresult" type="boolean" _gui-text="Do you wish to view the result?">true</param>
+
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu>
+       <submenu _name="Export"/>
+    </effects-menu>
+  </effect>
+  <script>
+    <command reldir="extensions" interpreter="python">larscwallin.inx.bansai.py</command>
+  </script>
+</inkscape-extension>
