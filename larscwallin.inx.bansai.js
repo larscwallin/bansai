@@ -38,7 +38,7 @@ var bansai = {
                                 if(node.transform!==''){
                                     m = new Matrix();
                                     m.scale(node.transform[0][0],node.transform[1][1]);
-                                    m.rotate(node.transform[1][0]);
+                                    m.rotate(node.transform[0][1]);
                                     m.translate(node.transform[0][2],node.transform[1][2]);
                                     group.attr('matrix',m);
                                 }
