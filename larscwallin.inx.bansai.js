@@ -1,4 +1,4 @@
- bansai = {
+var bansai = {
                             ids: {},
                             labels:{},
                             groups:{},
