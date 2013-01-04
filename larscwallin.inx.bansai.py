@@ -239,6 +239,7 @@ class Bansai(inkex.Effect):
         group = {
             'id':id,
             'name':label,
+            'label':label,
             'svg':'g',
             'transform':transform,
             'box':box,
