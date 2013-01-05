@@ -37,9 +37,14 @@ var bansai = {
 
                                 if(node.transform!==''){
                                     m = new Matrix();
-                                    m.scale(node.transform[0][0],node.transform[1][1]);
-                                    m.rotate(node.transform[0][1]);
+
+                                    rotation = Math.atan2( node.transform[1][0], node.transform[0][0] );
+                                    
+                                    m.rotate(rotation);                                    
+                                    //m.scale(node.transform[0][0],node.transform[1][1]);
                                     m.translate(node.transform[0][2],node.transform[1][2]);
+
+                                    
                                     group.attr('matrix',m);
                                 }
 
@@ -67,9 +72,14 @@ var bansai = {
 
                                 if(node.transform!=='' && parent.transform === ''){
                                     m = new Matrix();
-                                    m.scale(node.transform[0][0],node.transform[1][1]);
-                                    m.rotate(node.transform[0][1]);
+
+                                    /* Get rotation in radiance */
+                                    rotation = Math.atan2( node.transform[1][0], node.transform[0][0] );
+                                    
+                                    m.rotate(rotation);                                    
+                                    //m.scale(node.transform[0][0],node.transform[1][1]);
                                     m.translate(node.transform[0][2],node.transform[1][2]);
+
                                     path.attr('matrix',m);
                                 }else{
                                     console.log('Skipping transform as it has been applied by parent.');
