@@ -35,9 +35,11 @@ var bansai = {
                                     }
                                 });
 
+  
                                 if(node.transform!==''){
                                     m = new Matrix();
-                                    transform = bansai.normalizeMatrix(node.transform);
+                                    transform = node.transform;
+                                    
                                     m.rotate(transform.rotation.radiance); 
                                     m.scale(transform.scale.x,transform.scale.y);
                                     m.translate(transform.translation.x,transform.translation.y);
@@ -68,8 +70,8 @@ var bansai = {
 
                                 if(node.transform!=='' && parent.transform === ''){
                                     m = new Matrix();
-
-                                    transform = bansai.normalizeMatrix(node.transform);
+                                    transform = node.transform;
+                                    
                                     m.rotate(transform.rotation.radiance); 
                                     m.scale(transform.scale.x,transform.scale.y);
                                     m.translate(transform.translation.x,transform.translation.y);
