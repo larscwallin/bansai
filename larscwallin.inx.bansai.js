@@ -37,14 +37,10 @@ var bansai = {
 
                                 if(node.transform!==''){
                                     m = new Matrix();
-
-                                    rotation = Math.atan2( node.transform[1][0], node.transform[0][0] );
-                                    
-                                    m.rotate(rotation);                                    
-                                    //m.scale(node.transform[0][0],node.transform[1][1]);
-                                    m.translate(node.transform[0][2],node.transform[1][2]);
-
-                                    
+                                    transform = bansai.normalizeMatrix(node.transform);
+                                    m.rotate(transform.rotation.radiance); 
+                                    m.scale(transform.scale.x,transform.scale.y);
+                                    m.translate(transform.translation.x,transform.translation.y);
                                     group.attr('matrix',m);
                                 }
 
@@ -73,12 +69,10 @@ var bansai = {
                                 if(node.transform!=='' && parent.transform === ''){
                                     m = new Matrix();
 
-                                    /* Get rotation in radiance */
-                                    rotation = Math.atan2( node.transform[1][0], node.transform[0][0] );
-                                    
-                                    m.rotate(rotation);                                    
-                                    //m.scale(node.transform[0][0],node.transform[1][1]);
-                                    m.translate(node.transform[0][2],node.transform[1][2]);
+                                    transform = bansai.normalizeMatrix(node.transform);
+                                    m.rotate(transform.rotation.radiance); 
+                                    m.scale(transform.scale.x,transform.scale.y);
+                                    m.translate(transform.translation.x,transform.translation.y);
 
                                     path.attr('matrix',m);
                                 }else{
@@ -337,5 +331,69 @@ var bansai = {
                                     b: parseInt(result[3], 16),
                                     a: alpha
                                 } : null;
+                            },
+
+                            normalizeMatrix:function(mat){
+                              var degree = 180 / Math.PI;
+                              var radian = Math.PI / 180;
+                              var a = mat[0];
+                              var b = mat[1];
+                              var c = mat[2];
+                              var d = mat[3];
+                              var tx = mat[4];
+                              var ty = mat[5];
+                              var rad;
+                              var deg;
+                              var sign;
+                              var rotationInDegree;
+                              var rotation;
+                              var scaleX;
+                              var scaleY;
+                              var skewX;
+                              var skewY;
+
+                              /**
+                               * scaleX = √(a^2+c^2)
+                               * scaleY = √(b^2+d^2)
+                               * rotation = tan^-1(c/d) = tan^-1(-b/a) it will not work sometimes 
+                               * rotation = a / scaleX  = d / scaleY
+                               */
+
+                              scaleX = Math.sqrt((a * a) + (c * c));
+                              scaleY = Math.sqrt((b * b) + (d * d));
+
+                              sign = Math.atan(-c / a);
+                              rad  = Math.acos(a / scaleX);
+                              deg  = rad * degree;
+                              
+                              if (deg > 90 && sign > 0)
+                              {
+                                rotation = (360 - deg) * radian;
+                              }
+                              else if (deg < 90 && sign < 0)
+                              {
+                                rotation = (360 - deg) * radian;
+                              }
+                              else
+                              {
+                                rotation = rad;
+                              }
+                              rotationInDegree = rotation * degree;
+                              
+                              return {
+                                scale:{
+                                  x:scaleX,
+                                  y:scaleY
+                                },
+                                rotation:{
+                                  degree:rotationInDegree,
+                                  radiance:rotation
+                                },
+                                translation:{
+                                  x:tx,
+                                  y:ty
+                                }
+                              };
                             }
+
                         };
