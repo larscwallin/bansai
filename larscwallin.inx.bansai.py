@@ -8,6 +8,8 @@ from time import gmtime, strftime
 import string
 import webbrowser
 import threading
+import math
+import re
 from optparse import OptionParser
 
 
@@ -224,11 +226,14 @@ class Bansai(inkex.Effect):
     def parseGroup(self,node,parent):
         #inkex.debug(self.debug_tab + 'Parsing group' + node.get('id'))
         self.debug_tab += '    '
-
+        matrix_list = []
         self.parsing_context = 'g'
 
         id = node.get('id')
         transform = simpletransform.parseTransform(node.get('transform',''))
+        matrix_list = self.matrixToList(transform)
+        transform = self.normalizeMatrix(matrix_list)
+
         label = str(node.get(inkex.addNS('label', 'inkscape'),''))
 
         elements = node.xpath('./*',namespaces=inkex.NSS)
@@ -350,6 +355,7 @@ class Bansai(inkex.Effect):
         style = node.get('style')
         style = self.parseStyleAttribute(style)
         transform = simpletransform.parseTransform(node.get('transform',''))
+        transform = self.matrixToList(transform)
         path_array = simplepath.parsePath(node.get('d'))
 
         path = {
@@ -545,6 +551,18 @@ class Bansai(inkex.Effect):
 
                         gradient_stop = {}
 
+                        """
+                            gradient = node.attr.fillGradient;
+                            stops = [];
+
+                            // Set up stops array
+                            gradient.stops.forEach(function(el){
+                                color =  bansai.hexToRgba(el.stopColor,el.stopOpacity);
+                                color = ('rgba('+color.r+','+color.g+','+color.b+','+color.a+')');
+                                stops.push(color,el.offset);
+                            });
+                        """
+
                         for param,val in node.items():
 
                             param = self.parseTagName(param)
@@ -631,6 +649,133 @@ class Bansai(inkex.Effect):
         else:
             return tag
 
+
+    def matrixToList(self, matrix):
+        """
+        From matrix order,
+
+        1          3           5         2          4          6
+
+        to  sequencial list
+
+        1          2           3          4          5         6
+        """
+
+        return [
+            matrix[0][0],
+            matrix[1][0],
+            matrix[0][1],
+            matrix[1][1],
+            matrix[0][2],
+            matrix[1][2]
+        ]
+
+
+    def hex_to_rgba(self, value):
+        value = value.lstrip('#')
+        if len(value) == 3:
+            value = ''.join([v*2 for v in list(value)])
+        return tuple(int(value[i:i+2], 16) for i in range(0, 6, 2))+(1,)
+
+
+    def hexToRgbaCss(self,word):
+        re_hex_color = re.compile('#?([0-9a-fA-F]{3}([0-9a-fA-F]{3})?){1}$')
+        if re_hex_color.match(word):
+            rgba = self.hex_to_rgba(word)
+            rgba_css = 'rgba(%s,%s,%s,%s)' % rgba
+            return rgba_css
+
+
+    def hexToRgbaDict(self,hex,alpha):
+        re_hex_color = re.compile('#?([0-9a-fA-F]{3}([0-9a-fA-F]{3})?){1}$')
+        if re_hex_color.match(hex):
+            rgba = self.hex_to_rgba(hex)
+            rgba_dict = {
+                'r':rgba[0],
+                'g':rgba[1],
+                'b':rgba[2],
+                'a':alpha
+
+            }
+            return rgba_dict
+
+
+    def getRotationAngle(coords):
+
+        if(len(coords) < 4):
+            return False
+
+        deg2rad = math.pi/180
+        rad2deg = 180/math.pi
+
+        dx = coords[0] - coords[1]
+        dy = coords[2] - coords[3]
+
+        rads = math.atan2(dx,dy)
+        degs = rads * rad2deg
+
+        return degs
+
+
+        """
+        setRotationAngle:function(coords, direction){
+                                            var resultCoords = [];
+
+
+                                            if(direction === "left"){
+                                                resultCoords = [100,0,0,0];
+                                            } else if(direction === "right"){
+                                                resultCoords = [0,100,0,0];
+                                            } else if(direction === "down"){
+                                                resultCoords = [0,0,0,100];
+                                            } else if(direction === "up"){
+                                                resultCoords = [0,0,100,0];
+                                            } else if(typeof direction === "number"){
+
+
+                                                var pointOfAngle = function(a) {
+                                                    return {
+                                                        x:Math.cos(a),
+                                                        y:Math.sin(a)
+                                                    };
+                                                };
+
+
+                                                var degreesToRadians = function(d) {
+                                                    return (d * (180 / Math.PI));
+                                                };
+
+
+                                                var eps = Math.pow(2, -52);
+                                                var angle = (direction % 360);
+                                                var startPoint = pointOfAngle(degreesToRadians(180 - angle));
+                                                var endPoint = pointOfAngle(degreesToRadians(360 - angle));
+
+
+                                                if(startPoint.x <= 0 || Math.abs(startPoint.x) <= eps)
+                                                    startPoint.x = 0;
+
+
+                                                if(startPoint.y <= 0 || Math.abs(startPoint.y) <= eps)
+                                                    startPoint.y = 0;
+
+
+                                                if(endPoint.x <= 0 || Math.abs(endPoint.x) <= eps)
+                                                    endPoint.x = 0;
+
+
+                                                if(endPoint.y <= 0 || Math.abs(endPoint.y) <= eps)
+                                                    endPoint.y = 0;
+
+
+                                                resultCoords = [startPoint.x,endPoint.x,startPoint.y,endPoint.y];
+                                            }
+
+
+                                        return resultCoords;
+                                    },
+        """
+
     def viewOutput(self,url):
         vwswli = VisitWebSiteWithoutLockingInkscape()
         vwswli.url = url
@@ -679,6 +824,49 @@ class Bansai(inkex.Effect):
             return False
 
 
+    def normalizeMatrix(self,mat):
+      degree = 180 / math.pi
+      radian = math.pi / 180
+      a = mat[0]
+      b = mat[1]
+      c = mat[2]
+      d = mat[3]
+      tx = mat[4]
+      ty = mat[5]
+
+      scaleX = math.sqrt((a * a) + (c * c))
+      scaleY = math.sqrt((b * b) + (d * d))
+
+      sign = math.atan(-c / a)
+      rad  = math.acos(a / scaleX)
+      deg  = rad * degree
+
+      if (deg > 90 and sign > 0):
+        rotation = (360 - deg) * radian
+
+      elif (deg < 90 and sign < 0):
+        rotation = (360 - deg) * radian
+      else:
+        rotation = rad
+
+      rotationInDegree = rotation * degree
+
+      return {
+        'scale':{
+          'x':scaleX,
+          'y':scaleY
+        },
+        'rotation':{
+          'degree':rotationInDegree,
+          'radiance':rotation
+        },
+        'translation':{
+          'x':tx,
+          'y':ty
+        },
+        'matrix':mat
+    }
+
 class VisitWebSiteWithoutLockingInkscape(threading.Thread):
     url = ''
     def __init__(self):
@@ -692,5 +880,4 @@ class VisitWebSiteWithoutLockingInkscape(threading.Thread):
 # Create effect instance and apply it.
 effect = Bansai()
 effect.affect(output=False)
-
 
