@@ -357,6 +357,7 @@ class Bansai(inkex.Effect):
         transform = simpletransform.parseTransform(node.get('transform',''))
         transform = self.matrixToList(transform)
         path_array = simplepath.parsePath(node.get('d'))
+        transform = self.normalizeMatrix(transform)
 
         path = {
             'id':node.get('id'),
