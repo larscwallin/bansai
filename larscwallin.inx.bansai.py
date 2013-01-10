@@ -18,7 +18,6 @@ from optparse import OptionParser
 # sys.path.append('/usr/share/inkscape/extensions')
 
 """
-Bansai! version 0.00001
 
 * What is Bansai?
     This is a script extension for Inkscape.It was inspired by the splendid BonsaiJS library. As well as
@@ -228,11 +227,13 @@ class Bansai(inkex.Effect):
         self.debug_tab += '    '
         matrix_list = []
         self.parsing_context = 'g'
-
+        transform = node.get('transform','')
         id = node.get('id')
-        transform = simpletransform.parseTransform(node.get('transform',''))
-        matrix_list = self.matrixToList(transform)
-        transform = self.normalizeMatrix(matrix_list)
+
+        if(transform!=''):
+            transform = simpletransform.parseTransform(node.get('transform',''))
+            transform = self.matrixToList(transform)
+            transform = self.normalizeMatrix(transform)
 
         label = str(node.get(inkex.addNS('label', 'inkscape'),''))
 
@@ -308,14 +309,13 @@ class Bansai(inkex.Effect):
                 if(key== 'filter'):
                     parsed_set['filter'] = self.parseFilter(val)
                 elif(key == 'fill' and val.find('url(#') > -1):
-                    parsed_set['fill-gradient'] = self.parseGradient(val)
+                    parsed_set['fillGradient'] = self.parseGradient(val)
                 elif(key == 'stroke' and val.find('url(#') > -1):
-                    parsed_set['stroke-gradient'] = self.parseGradient(val)
+                    parsed_set['strokeGradient'] = self.parseGradient(val)
                 else:
                     parsed_set[key] = val
 
-        result =  parsed_set
-        return result
+        return parsed_set
 
     def parseFilter(self,filter_str):
         # Split out the id from the url reference
@@ -354,10 +354,18 @@ class Bansai(inkex.Effect):
 
         style = node.get('style')
         style = self.parseStyleAttribute(style)
+
+        transform = node.get('transform','')
         transform = simpletransform.parseTransform(node.get('transform',''))
-        transform = self.matrixToList(transform)
+
+        if(transform!=''):
+
+            transform = self.matrixToList(transform)
+            transform = self.normalizeMatrix(transform)
+
         path_array = simplepath.parsePath(node.get('d'))
         transform = self.normalizeMatrix(transform)
+
 
         path = {
             'id':node.get('id'),
@@ -380,9 +388,6 @@ class Bansai(inkex.Effect):
             }
 
         }
-
-
-
 
         #inkex.debug('Path resides in group ' + self.parse_stack[len(self.parse_stack)-1]['id'])
 
@@ -527,6 +532,8 @@ class Bansai(inkex.Effect):
 
             tag_name = self.parseTagName(gradient_use.tag)
 
+
+
             gradient_params['stops'] = []
 
             #inkex.debug(self.debug_tab + 'Gradient ' + tag_name)
@@ -552,18 +559,6 @@ class Bansai(inkex.Effect):
 
                         gradient_stop = {}
 
-                        """
-                            gradient = node.attr.fillGradient;
-                            stops = [];
-
-                            // Set up stops array
-                            gradient.stops.forEach(function(el){
-                                color =  bansai.hexToRgba(el.stopColor,el.stopOpacity);
-                                color = ('rgba('+color.r+','+color.g+','+color.b+','+color.a+')');
-                                stops.push(color,el.offset);
-                            });
-                        """
-
                         for param,val in node.items():
 
                             param = self.parseTagName(param)
@@ -581,16 +576,136 @@ class Bansai(inkex.Effect):
                         gradient_params['stops'].append(gradient_stop)
 
                 elif(param == 'gradientTransform'):
-                    transform = simpletransform.parseTransform(val)
-                    gradient_params[param] = transform
+                    transform = simpletransform.parseTransform(gradient_use.get('gradientTransform',''))
+
+                    if(transform!=''):
+                        transform = self.matrixToList(transform)
+                        transform = self.normalizeMatrix(transform)
+
+                    gradient_params['transform'] = transform
                 else:
                     gradient_params[param] = val
 
             gradient_params['svg'] = tag_name
 
-            result_list = gradient_params
+            return gradient_params
 
-            return result_list
+        """
+            stops Array | Object   Color stops in the form: `['red','yellow',...]` or `[['red', 0], ['green', 50], ['#FFF', 100]]` i.e. Sub-array [0] is color and [1] is percentage As an object: { 0: 'yellow', 50: 'red', 100: 'green' }
+            direction Number | String   Direction in degrees or a string, one of: `top`, `left`, `right`, `bottom`, `top left`, `top right`, `bottom left`, `bottom right`
+            matrix Matrix  <optional>
+             Matrix transform for gradient
+            repeat String  <optional>
+             How many times to repeat the gradient
+            units String  <optional>
+             Either 'userSpace' or 'boundingBox'.
+
+
+            stops Array   Color stops in the form: `['red','yellow',...]` or `[['red', 0], ['green', 50], ['#FFF', 100]]` i.e. Sub-array [0] is color and [1] is percentage
+            r Number  <optional>
+             Radius in percentage (default: 50)
+            cx Number  <optional>
+             X coordinate of center of gradient in percentage (default: 50)
+            cy Number  <optional>
+             Y coordinate of center of gradient in percentage (default: 50)
+            matrix Matrix  <optional>
+             Matrix transform for gradient
+            repeat String  <optional>
+             How many times to repeat the gradient
+            units String  <optional>
+             Either 'userSpace' or 'boundingBox'.
+
+
+        """
+
+
+    def _parseGradient(self,gradient_str):
+        # Split out the id from the url reference
+        gradient_use_id = self.parseUrlParam(gradient_str)
+        gradient_use = {}
+        gradient_href_id = ''
+        gradient_href = {}
+        result_list = {}
+        tag_name = ''
+        gradient_stops = []
+        gradient_params = {}
+
+        # Got a valid id?
+        if(gradient_use_id != ''):
+            #
+            gradient_use = self.document.xpath('//svg:svg/svg:defs/*[@id="'+ gradient_use_id +'"]',namespaces=inkex.NSS)[0]
+
+            tag_name = self.parseTagName(gradient_use.tag)
+
+            gradient_params['stops'] = []
+
+            inkex.debug(self.debug_tab + '\nGradient ' + tag_name)
+
+            # Grab all the parameters and values for the current gradient
+            for param,val in gradient_use.items():
+
+                inkex.debug(self.debug_tab + 'param ' + param + ' val ' + val)
+                param = self.parseTagName(param)
+
+                if(param == 'href'):
+
+                    inkex.debug(self.debug_tab + 'Got a href')
+                    # Inkscape uses one-to-many rel for gradients. We need to get the base config
+                    # element which has params for color and stops.
+                    gradient_href_id = val.split('#')[1]
+                    gradient_href = self.document.xpath('//svg:svg/svg:defs/*[@id="'+ gradient_href_id +'"]/*',namespaces=inkex.NSS)
+
+                    inkex.debug(self.debug_tab + 'to ' + gradient_href_id)
+                    inkex.debug(self.debug_tab + 'Looping through ' + str(len(gradient_href)) + ' gradient parameter elements')
+
+                    for node in gradient_href:
+
+                        inkex.debug(self.debug_tab + 'Current parameter element ' + node.tag)
+
+                        gradient_stop = {}
+
+                        """
+                            gradient = node.attr.fillGradient;
+                            stops = [];
+
+                            // Set up stops array
+                            gradient.stops.forEach(function(el){
+                                color =  bansai.hexToRgba(el.stopColor,el.stopOpacity);
+                                color = ('rgba('+color.r+','+color.g+','+color.b+','+color.a+')');
+                                stops.push(color,el.offset);
+                            });
+                        """
+
+                        for param,val in node.items():
+
+                            param = self.parseTagName(param)
+
+                            inkex.debug(self.debug_tab + 'Looping through gradient parameter attributes of ' + param)
+
+                            if(param == 'style'):
+                                inkex.debug(self.debug_tab + 'Parsing style ' + val)
+                                gradient_stop.update(self.parseStyleAttribute(val))
+                            else:
+                                inkex.debug(self.debug_tab + 'Adding param/value : ' + param + '/' +  val)
+                                gradient_stop[param] = val
+
+                        inkex.debug(self.debug_tab + 'Adding stop ' + gradient_stop['id'])
+                        gradient_params['stops'].append(gradient_stop)
+
+                elif(param == 'gradientTransform'):
+                    inkex.debug(self.debug_tab + '\nGot a gradient transform')
+                    transform = simpletransform.parseTransform(val)
+                    gradient_params[param] = transform
+                else:
+                    inkex.debug(self.debug_tab + '\ngradient param ' +  val)
+                    gradient_params[param] = val
+
+
+        inkex.debug(self.debug_tab + '\nDone. Adding tag_name ' +  tag_name)
+        gradient_params['svg'] = tag_name
+        result_list = gradient_params
+
+        return result_list
 
         """
             stops Array | Object   Color stops in the form: `['red','yellow',...]` or `[['red', 0], ['green', 50], ['#FFF', 100]]` i.e. Sub-array [0] is color and [1] is percentage As an object: { 0: 'yellow', 50: 'red', 100: 'green' }
