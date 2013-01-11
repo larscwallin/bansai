@@ -68,7 +68,7 @@ var bansai = {
                                     strokeWidth: node.attr.strokeWidth
                                 });
 
-                                if(node.transform!=='' && parent.transform === ''){
+                                if(node.transform!==''){
                                     m = new Matrix();
                                     transform = node.transform;
                                     
@@ -77,9 +77,6 @@ var bansai = {
                                     m.translate(transform.translation.x,transform.translation.y);
 
                                     path.attr('matrix',m);
-                                }else{
-                                    console.log('Skipping transform as it has been applied by parent.');
-
                                 }
 
                                 if(node.attr.filters!==''){
@@ -102,6 +99,7 @@ var bansai = {
                                         case 'linearGradient':
                                             //console.log('Type, linear gradient');
                                             gradient = node.attr.fillGradient;
+                                            rotation = gradient.transform.rotation.degree;
                                             stops = [];
 
                                             // Set up stops array
@@ -112,7 +110,7 @@ var bansai = {
                                                 stops.push(color,el.offset);
                                             });
 
-                                            bonsaiGradient = bonsai.gradient.linear('top',stops);
+                                            bonsaiGradient = bonsai.gradient.linear((rotation+'deg'),stops);
                                             //console.log(bonsaiGradient);
                                             path.attr({
                                                 fillGradient:bonsaiGradient
@@ -154,8 +152,24 @@ var bansai = {
                                             */
                                             break;
                                         case 'radialGradient':
-                                            //console.log('Type, radial gradient');
+                                            console.log('Type, radial gradient');
+                                            gradient = node.attr.fillGradient;
+                                            rotation = gradient.transform.rotation.degree;
+                                            stops = [];
 
+                                            // Set up stops array
+                                            gradient.stops.forEach(function(el){
+                                                color =  bansai.hexToRgba(el.stopColor,el.stopOpacity);
+                                                color = ('rgba('+color.r+','+color.g+','+color.b+','+color.a+')');
+                                                //console.log('stop color / offset ' + color + ' / ' + el.offset);
+                                                stops.push(color,el.offset);
+                                            });
+
+                                            bonsaiGradient = bonsai.gradient.radial('top',stops);
+                                            //console.log(bonsaiGradient);
+                                            path.attr({
+                                                fillGradient:bonsaiGradient
+                                            });
                                             /*
                                                   'fillGradient':{
                                                      'fx':'355.71429',
