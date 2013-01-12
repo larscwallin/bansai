@@ -45,8 +45,10 @@ var bansai = {
                                     m.translate(transform.translation.x,transform.translation.y);
                                     group.attr('matrix',m);
                                 }
-
-                                group.setOrigin(node.origin.x,node.origin.y);
+                                if(node.origin){
+                                  group.setOrigin(( node.box[0] + node.origin.x ),(node.box[2] + node.origin.y ));                   
+                                }
+                                
 
                                 bansai.ids[node.id] = group;
 
@@ -68,8 +70,13 @@ var bansai = {
                                     fillOpacity: node.attr.opacity,
                                     strokeColor: node.attr.strokeColor,
                                     strokeWidth: node.attr.strokeWidth,
-                                    origin:node.origin
                                 });
+
+                                if(node.origin){
+                                  path.setOrigin(( node.box[0] + node.origin.x ),(node.box[2] + node.origin.y ));                      
+                                }else{
+                                  //console.log('No origin defined for '+node.id);
+                                }
 
                                 if(node.transform!==''){
                                     m = new Matrix();
