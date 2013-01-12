@@ -238,8 +238,18 @@ class Bansai(inkex.Effect):
 
         elements = node.xpath('./*',namespaces=inkex.NSS)
 
-        box = simpletransform.computeBBox(elements)
-        box = list(box) if box != None else []
+        #box = simpletransform.computeBBox(elements)
+        #box = list(box) if box != None else []
+
+        box =list(simpletransform.computeBBox([node]))
+
+        box[1] = (box[1]-box[0])
+        box[3] = (box[3]-box[2])
+
+        origin_x = float(node.get(inkex.addNS('transform-center-x', 'inkscape'),0))
+        origin_y = float(node.get(inkex.addNS('transform-center-y', 'inkscape'),0))
+        origin_x = origin_x + ( box[1] / 2)
+        origin_y = (origin_y * -1) + ( box[3] / 2)
 
         group = {
             'id':id,
@@ -248,8 +258,8 @@ class Bansai(inkex.Effect):
             'svg':'g',
             'transform':transform,
             'origin':{
-                'x':str(node.get(inkex.addNS('transform-center-x', 'inkscape'),0)),
-                'y':str(node.get(inkex.addNS('transform-center-y', 'inkscape'),0)),
+                'x':origin_x,
+                'y':origin_y,
             },
             'box':box,
             'elements':[]
@@ -360,6 +370,15 @@ class Bansai(inkex.Effect):
 
         transform = node.get('transform','')
 
+        box =list(simpletransform.computeBBox([node]))
+
+        box[1] = (box[1]-box[0])
+        box[3] = (box[3]-box[2])
+
+        origin_x = float(node.get(inkex.addNS('transform-center-x', 'inkscape'),0))
+        origin_y = float(node.get(inkex.addNS('transform-center-y', 'inkscape'),0))
+        origin_x = origin_x + ( box[1] / 2)
+        origin_y = (origin_y * -1) + ( box[3] / 2)
 
         if(transform!=''):
             transform = simpletransform.parseTransform(node.get('transform',''))
@@ -373,14 +392,14 @@ class Bansai(inkex.Effect):
             'id':node.get('id'),
             'svg':'path',
             'label':str(node.get(inkex.addNS('label', 'inkscape'),'')),
-            'box':list(simpletransform.computeBBox([node])),
+            'box':box,
             'transform':transform,
             'origin':{
-                'x':str(node.get(inkex.addNS('transform-center-x', 'inkscape'),0)),
-                'y':str(node.get(inkex.addNS('transform-center-y', 'inkscape'),0)),
+                'x':origin_x,
+                'y':origin_y,
             },
             'path':path_array,
-            'd':node.get('d',''),
+            #'d':node.get('d',''),
             'attr':{
                 'fillColor':style.get('fill',''),
                 'fillGradient':style.get('fillGradient',''),
