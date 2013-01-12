@@ -46,6 +46,8 @@ var bansai = {
                                     group.attr('matrix',m);
                                 }
 
+                                group.setOrigin(node.origin.x,node.origin.y);
+
                                 bansai.ids[node.id] = group;
 
                                 if (node.label !== '') {
@@ -65,13 +67,14 @@ var bansai = {
                                     fillColor: node.attr.fillColor,
                                     fillOpacity: node.attr.opacity,
                                     strokeColor: node.attr.strokeColor,
-                                    strokeWidth: node.attr.strokeWidth
+                                    strokeWidth: node.attr.strokeWidth,
+                                    origin:node.origin
                                 });
 
                                 if(node.transform!==''){
                                     m = new Matrix();
                                     transform = node.transform;
-                                    
+
                                     m.rotate(transform.rotation.radiance); 
                                     m.scale(transform.scale.x,transform.scale.y);
                                     m.translate(transform.translation.x,transform.translation.y);
@@ -105,12 +108,12 @@ var bansai = {
                                             // Set up stops array
                                             gradient.stops.forEach(function(el){
                                                 color =  bansai.hexToRgba(el.stopColor,el.stopOpacity);
-                                                color = ('rgba('+color.r+','+color.g+','+color.b+','+color.a+')');
-                                                //console.log('stop color / offset ' + color + ' / ' + el.offset);
-                                                stops.push(color,el.offset);
+                                                color = ('rgb('+color.r+','+color.g+','+color.b+')');
+                                                console.log('stop color / offset ' + color + ' / ' + (el.offset * 100));
+                                                stops.push(color,(el.offset * 100));
                                             });
 
-                                            bonsaiGradient = bonsai.gradient.linear((rotation+'deg'),stops);
+                                            bonsaiGradient = bonsai.gradient.linear((rotation+'deg'),stops,false);
                                             //console.log(bonsaiGradient);
                                             path.attr({
                                                 fillGradient:bonsaiGradient
@@ -160,12 +163,12 @@ var bansai = {
                                             // Set up stops array
                                             gradient.stops.forEach(function(el){
                                                 color =  bansai.hexToRgba(el.stopColor,el.stopOpacity);
-                                                color = ('rgba('+color.r+','+color.g+','+color.b+','+color.a+')');
+                                                color = ('rgb('+color.r+','+color.g+','+color.b+')');
                                                 //console.log('stop color / offset ' + color + ' / ' + el.offset);
-                                                stops.push(color,el.offset);
+                                                stops.push(color,(el.offset * 100));
                                             });
 
-                                            bonsaiGradient = bonsai.gradient.radial('top',stops);
+                                            bonsaiGradient = bonsai.gradient.radial('top',stops,false);
                                             //console.log(bonsaiGradient);
                                             path.attr({
                                                 fillGradient:bonsaiGradient

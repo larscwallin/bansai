@@ -247,6 +247,10 @@ class Bansai(inkex.Effect):
             'label':label,
             'svg':'g',
             'transform':transform,
+            'origin':{
+                'x':str(node.get(inkex.addNS('transform-center-x', 'inkscape'),0)),
+                'y':str(node.get(inkex.addNS('transform-center-y', 'inkscape'),0)),
+            },
             'box':box,
             'elements':[]
         }
@@ -328,7 +332,7 @@ class Bansai(inkex.Effect):
             filters = self.document.xpath('//svg:svg/svg:defs/svg:filter[@id="'+filter_id+'"]/*',namespaces=inkex.NSS)
 
             for node in filters:
-                inkex.debug(self.debug_tab + 'Looping filter ' + node.get('id'))
+                #inkex.debug(self.debug_tab + 'Looping filter ' + node.get('id'))
                 tag_name = self.parseTagName(node.tag)
 
                 filter = {
@@ -338,7 +342,7 @@ class Bansai(inkex.Effect):
                 # Grab all the parameters and values for the current filter
                 for param,val in node.items():
                     param = self.parseTagName(param)
-                    inkex.debug(self.debug_tab + 'param ' + param + ' val ' + val)
+                    #inkex.debug(self.debug_tab + 'param ' + param + ' val ' + val)
                     filter[param] = val
 
                 result_list.append(filter)
@@ -371,6 +375,10 @@ class Bansai(inkex.Effect):
             'label':str(node.get(inkex.addNS('label', 'inkscape'),'')),
             'box':list(simpletransform.computeBBox([node])),
             'transform':transform,
+            'origin':{
+                'x':str(node.get(inkex.addNS('transform-center-x', 'inkscape'),0)),
+                'y':str(node.get(inkex.addNS('transform-center-y', 'inkscape'),0)),
+            },
             'path':path_array,
             'd':node.get('d',''),
             'attr':{
