@@ -853,6 +853,8 @@ class Bansai(inkex.Effect):
       sign = math.atan(-c / a)
       rad  = math.acos(a / scaleX)
       deg  = rad * degree
+      reflectX = (a < 0)
+      reflectY = (d < 0)
 
       if (deg > 90 and sign > 0):
         rotation = (360 - deg) * radian
@@ -864,6 +866,17 @@ class Bansai(inkex.Effect):
 
       rotationInDegree = rotation * degree
 
+      # If we have a reflected matrix we subtract 180 degrees
+      if(reflectX or reflectY):
+        rotationInDegree = (rotationInDegree - 180)
+        rotation = (rotation - math.pi)
+
+      if(reflectX):
+        scaleX = (scaleX * -1)
+      if(reflectY):
+        scaleY = (scaleY * -1)
+
+
       return {
         'scale':{
           'x':scaleX,
@@ -872,6 +885,10 @@ class Bansai(inkex.Effect):
         'rotation':{
           'degree':rotationInDegree,
           'radiance':rotation
+        },
+        'reflection':{
+            'x':str(reflectX),
+            'y':str(reflectY)
         },
         'translation':{
           'x':tx,
