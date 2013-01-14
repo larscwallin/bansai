@@ -557,76 +557,79 @@ class Bansai(inkex.Effect):
 
             tag_name = self.parseTagName(gradient_use.tag)
 
-            gradient_params['stops'] = []
+            if(tag_name=='linearGradient'):
 
-            #inkex.debug(self.debug_tab + 'Gradient ' + tag_name)
+                inkex.debug(tag_name);
+                gradient_params['stops'] = []
 
-            # Grab all the parameters and values for the current gradient
-            for param,val in gradient_use.items():
-                #inkex.debug(self.debug_tab + 'param ' + param + ' val ' + val)
-                param = self.parseTagName(param)
+                #inkex.debug(self.debug_tab + 'Gradient ' + tag_name)
 
-                if(param == 'href'):
+                # Grab all the parameters and values for the current gradient
+                for param,val in gradient_use.items():
+                    #inkex.debug(self.debug_tab + 'param ' + param + ' val ' + val)
+                    param = self.parseTagName(param)
 
-                    # Inkscape uses one-to-many rel for gradients. We need to get the base config
-                    # element which has params for color and stops.
-                    gradient_href_id = val.split('#')[1]
-                    gradient_href = self.document.xpath('//svg:svg/svg:defs/*[@id="'+ gradient_href_id +'"]/*',namespaces=inkex.NSS)
+                    if(param == 'href'):
 
-                    #inkex.debug(self.debug_tab + 'href to ' + gradient_href_id)
-                    #inkex.debug(self.debug_tab + 'Looping through ' + str(len(gradient_href)) + ' gradient parameter elements')
+                        # Inkscape uses one-to-many rel for gradients. We need to get the base config
+                        # element which has params for color and stops.
+                        gradient_href_id = val.split('#')[1]
+                        gradient_href = self.document.xpath('//svg:svg/svg:defs/*[@id="'+ gradient_href_id +'"]/*',namespaces=inkex.NSS)
 
-                    for node in gradient_href:
+                        #inkex.debug(self.debug_tab + 'href to ' + gradient_href_id)
+                        #inkex.debug(self.debug_tab + 'Looping through ' + str(len(gradient_href)) + ' gradient parameter elements')
 
-                        #inkex.debug(self.debug_tab + 'Current parameter element ' + node.tag)
+                        for node in gradient_href:
 
-                        gradient_stop = {}
+                            #inkex.debug(self.debug_tab + 'Current parameter element ' + node.tag)
 
-                        for param,val in node.items():
+                            gradient_stop = {}
 
-                            param = self.parseTagName(param)
+                            for param,val in node.items():
 
-                            #inkex.debug(self.debug_tab + 'Looping through gradient parameter attributes of ' + param)
+                                param = self.parseTagName(param)
 
-                            if(param == 'style'):
-                                #inkex.debug(self.debug_tab + 'Parsing style ' + val)
-                                gradient_stop.update(self.parseStyleAttribute(val))
-                            else:
-                                #inkex.debug(self.debug_tab + 'Adding param/value : ' + param + '/' +  val)
-                                gradient_stop[param] = val
+                                #inkex.debug(self.debug_tab + 'Looping through gradient parameter attributes of ' + param)
 
-                        #inkex.debug(self.debug_tab + 'Adding stop ' + gradient_stop['id'])
-                        gradient_params['stops'].append(gradient_stop)
+                                if(param == 'style'):
+                                    #inkex.debug(self.debug_tab + 'Parsing style ' + val)
+                                    gradient_stop.update(self.parseStyleAttribute(val))
+                                else:
+                                    #inkex.debug(self.debug_tab + 'Adding param/value : ' + param + '/' +  val)
+                                    gradient_stop[param] = val
 
-                elif(param == 'gradientTransform'):
-                    transform = gradient_use.get('gradientTransform','')
+                            #inkex.debug(self.debug_tab + 'Adding stop ' + gradient_stop['id'])
+                            gradient_params['stops'].append(gradient_stop)
 
-                    if(transform!=''):
-                        transform = simpletransform.parseTransform(transform)
-                        transform = self.matrixToList(transform)
-                        transform = self.normalizeMatrix(transform)
+                    elif(param == 'gradientTransform'):
+                        transform = gradient_use.get('gradientTransform','')
 
-                    gradient_params['transform'] = transform
+                        if(transform!=''):
+                            transform = simpletransform.parseTransform(transform)
+                            transform = self.matrixToList(transform)
+                            transform = self.normalizeMatrix(transform)
+
+                        gradient_params['transform'] = transform
+                    else:
+                        gradient_params[param] = val
+
+                gradient_params['svg'] = tag_name
+
+                # Inkscape only uses transforms to translate gradients afaik.
+                # Lets add the rotation degree manually
+                rotation = self.getRotationAngle([
+                        gradient_params['x1'],
+                        gradient_params['x2'],
+                        gradient_params['y1'],
+                        gradient_params['y2']
+                    ])
+
+                if(gradient_params.__contains__('transform')):
+                    gradient_params['transform']['rotation'] = rotation
                 else:
-                    gradient_params[param] = val
+                    gradient_params['transform'] = {'rotation':rotation}
 
-            gradient_params['svg'] = tag_name
-
-            # Inkscape only uses transforms to translate gradients afaik.
-            # Lets add the rotation degree manually
-            rotation = self.getRotationAngle([
-                    gradient_params['x1'],
-                    gradient_params['x2'],
-                    gradient_params['y1'],
-                    gradient_params['y2']
-                ])
-
-            if(gradient_params.__contains__('transform')):
-                gradient_params['transform']['rotation'] = rotation
-            else:
-                gradient_params['transform'] = {'rotation':rotation}
-
-            return gradient_params
+        return gradient_params
 
         """
             stops Array | Object   Color stops in the form: `['red','yellow',...]` or `[['red', 0], ['green', 50], ['#FFF', 100]]` i.e. Sub-array [0] is color and [1] is percentage As an object: { 0: 'yellow', 50: 'red', 100: 'green' }
