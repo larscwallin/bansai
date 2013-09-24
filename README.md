@@ -1,4 +1,4 @@
-Bonsai!
+Bansai!
 ======
 
 Inkscape to BonsaiJS extension
